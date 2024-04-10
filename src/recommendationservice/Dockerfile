@@ -28,6 +28,8 @@ RUN pip install -r requirements.txt
 FROM base
 # Enable unbuffered logging
 ENV PYTHONUNBUFFERED=1
+ENV ENABLE_TRACING=1
+ENV COLLECTOR_SERVICE_ADDR=172.17.0.2:4317
 
 # get packages
 WORKDIR /recommendationservice

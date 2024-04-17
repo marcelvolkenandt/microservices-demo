@@ -35,6 +35,12 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
+import numpy as np
+import pandas as pd
+import sklearn
+from sklearn.neighbors import NearestNeighbors
+from scipy.sparse import csr_matrix
+
 from logger import getJSONLogger
 logger = getJSONLogger('recommendationservice-server')
 
@@ -73,13 +79,13 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
         num_products = len(filtered_products)
         num_return = min(max_responses, num_products)
         # sample list of indicies to return
-        indices = random.sample(range(num_products), num_return)
+        ids = find_similar_movies('B07SR25YF2', X, num_return)
         # fetch product ids from indices
-        prod_list = [filtered_products[i] for i in indices]
-        logger.info("[Recv ListRecommendations] product_ids={}".format(prod_list))
+        #prod_list = [filtered_products[i] for i in indices]
+        #logger.info("[Recv ListRecommendations] product_ids={}".format(prod_list))
         # build and return response
         response = demo_pb2.ListRecommendationsResponse()
-        response.product_ids.extend(prod_list)
+        response.product_ids.extend(ids)
         return response
 
     def Check(self, request, context):
@@ -90,6 +96,43 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
         return health_pb2.HealthCheckResponse(
             status=health_pb2.HealthCheckResponse.UNIMPLEMENTED)
 
+def create_matrix(df):
+	
+	N = len(df['user_id'].unique())
+	M = len(df['product_id'].unique())
+	
+	# Map Ids to indices
+	user_mapper = dict(zip(np.unique(df["user_id"]), list(range(N))))
+	product_mapper = dict(zip(np.unique(df["product_id"]), list(range(M))))
+	
+	# Map indices to IDs
+	user_inv_mapper = dict(zip(list(range(N)), np.unique(df["user_id"])))
+	product_inv_mapper = dict(zip(list(range(M)), np.unique(df["product_id"])))
+	
+	user_index = [user_mapper[i] for i in df['user_id']]
+	product_index = [product_mapper[i] for i in df['product_id']]
+
+	X = csr_matrix((df["rating"], (product_index, user_index)), shape=(M, N))
+	
+	return X, user_mapper, product_mapper, user_inv_mapper, product_inv_mapper
+	
+
+def find_similar_movies(product_id, X, k, metric='cosine', show_distance=False):
+
+  neighbour_ids = []
+
+  product_ind = product_mapper[product_id]
+  product_vec = X[product_ind]
+  k+=1
+  kNN = NearestNeighbors(n_neighbors=k, algorithm="brute", metric=metric)
+  kNN.fit(X)
+  product_vec = product_vec.reshape(1,-1)
+  neighbour = kNN.kneighbors(product_vec, return_distance=show_distance)
+  for i in range(0,k):
+    n = neighbour.item(i)
+    neighbour_ids.append(product_inv_mapper[n])
+  neighbour_ids.pop(0)
+  return neighbour_ids
 
 if __name__ == "__main__":
     logger.info("initializing recommendationservice")
@@ -124,6 +167,12 @@ if __name__ == "__main__":
     except Exception as e:
         logger.warn(f"Exception on Cloud Trace setup: {traceback.format_exc()}, tracing disabled.") 
 
+
+    # prepare ML Model
+    ratings = pd.read_json('ratings.json', orient='records')
+    X, user_mapper, product_mapper, user_inv_mapper, product_inv_mapper = create_matrix(ratings)
+
+    # configure connections
     port = os.environ.get('PORT', "8080")
     catalog_addr = os.environ.get('PRODUCT_CATALOG_SERVICE_ADDR', '')
     if catalog_addr == "":

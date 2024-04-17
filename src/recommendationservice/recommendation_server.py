@@ -79,7 +79,6 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
         num_products = len(filtered_products)
         num_return = min(max_responses, num_products)
         # sample list of indicies to return
-        list(request.product_ids)
         ids = find_similar_movies(list(request.product_ids)[0], X, num_return)
         # fetch product ids from indices
         #prod_list = [filtered_products[i] for i in indices]

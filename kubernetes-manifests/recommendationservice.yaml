@@ -42,7 +42,7 @@ spec:
             drop:
               - ALL
           privileged: false
-          readOnlyRootFilesystem: true
+          readOnlyRootFilesystem: false
         image: recommendationservice
         ports:
         - containerPort: 8080

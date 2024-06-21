@@ -1,0 +1,3 @@
+FROM jaegertracing/all-in-one:1.52
+ENV COLLECTOR_OTLP_ENABLED=true
+EXPOSE 4317 16686 4318

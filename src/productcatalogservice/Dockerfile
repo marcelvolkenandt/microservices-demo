@@ -38,6 +38,7 @@ COPY products.json .
 # See https://golang.org/pkg/runtime/
 ENV GOTRACEBACK=single
 ENV ENABLE_TRACING=1
+ENV COLLECTOR_SERVICE_ADDR = localhost:4317
 
 EXPOSE 3550
 ENTRYPOINT ["/src/server"]

@@ -15,21 +15,15 @@
 # limitations under the License.
 
 import random
+import pandas as pd
+import numpy as np
 from locust import HttpUser, TaskSet, between
 from faker import Faker
 import datetime
 fake = Faker()
+product_json = pd.read_json("products.json")
+products = np.asarray(product_json["products"].apply(lambda x : x["id"]).astype(str))
 
-products = [
-    '0PUK6V6EV0',
-    '1YMWWN1N4O',
-    '2ZYFJ3GM2N',
-    '66VCHSJNUP',
-    '6E92ZMYYFZ',
-    '9SIQT8TOJO',
-    'L9ECAV7KIM',
-    'LS4PSXUNUM',
-    'OLJCESPC7Z']
 
 def index(l):
     l.client.get("/")

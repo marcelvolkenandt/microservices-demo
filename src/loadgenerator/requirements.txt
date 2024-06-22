@@ -71,8 +71,6 @@ python-dateutil==2.9.0.post0
     #   pandas
 pytz==2024.1
     # via pandas
-pywin32==306
-    # via locust
 pyzmq==25.1.2
     # via locust
 requests==2.31.0

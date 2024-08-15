@@ -28,7 +28,7 @@ COPY --from=builder /install /usr/local
 
 # Add application code.
 COPY locustfile.py .
-
+COPY products.json .
 # enable gevent support in debugger
 ENV GEVENT_SUPPORT=True
 

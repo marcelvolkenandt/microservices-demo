@@ -20,10 +20,13 @@ import numpy as np
 from locust import HttpUser, TaskSet, between
 from faker import Faker
 import datetime
+import re
+import torch
+from deepctr_torch.models import DeepFM
 fake = Faker()
 product_json = pd.read_json("products.json")
 products = np.asarray(product_json["products"].apply(lambda x : x["id"]).astype(str))
-
+#model = torch.load("./model_formatted_fashion_cpu_v2")
 
 def index(l):
     l.client.get("/")
@@ -34,14 +37,24 @@ def setCurrency(l):
         {'currency_code': random.choice(currencies)})
 
 def browseProduct(l):
-    l.client.get("/product/" + random.choice(products))
+    product_page = l.client.get(url = "/product/" + random.choice(products),
+                                headers = {"recommendation": "false"}).text
+    recommendations = []
+    shown_products = re.findall("a href=\"/product/(.+)\"", product_page)
+    for i in range(4):
+        recommendations.append(shown_products[i])
+    browseRecommendation(l, random.choice(recommendations))
+
+def browseRecommendation(l,rec):
+    l.client.get(url = "/product/" + rec, headers = {"recommendation": "true"})
 
 def viewCart(l):
     l.client.get("/cart")
 
 def addToCart(l):
     product = random.choice(products)
-    l.client.get("/product/" + product)
+    l.client.get(url = "/product/" + product,
+                 headers = {"recommendation": "false"})
     l.client.post("/cart", {
         'product_id': product,
         'quantity': random.randint(1,10)})
@@ -74,11 +87,11 @@ class UserBehavior(TaskSet):
     def on_start(self):
         index(self)
 
-    tasks = {index: 1,
-        setCurrency: 2,
+    tasks = {#index: 1,
+        #setCurrency: 2,
         browseProduct: 10,
-        addToCart: 2,
-        viewCart: 3,
+        #addToCart: 2,
+        #viewCart: 3,
         checkout: 1}
 
 class WebsiteUser(HttpUser):

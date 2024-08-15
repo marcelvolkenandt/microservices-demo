@@ -2,3 +2,5 @@ locust==2.24.1
 faker==24.4.0
 pandas
 numpy
+torch
+deepctr_torch

@@ -143,6 +143,8 @@ func (plat *platformDetails) setPlatformDetails(env string) {
 
 func (fe *frontendServer) productHandler(w http.ResponseWriter, r *http.Request) {
 	log := r.Context().Value(ctxKeyLog{}).(logrus.FieldLogger)
+	is_recommendation := r.Header.Get("recommendation")
+	log.Println(is_recommendation)
 	id := mux.Vars(r)["id"]
 	if id == "" {
 		renderHTTPError(log, r, w, errors.New("product id not specified"), http.StatusBadRequest)
